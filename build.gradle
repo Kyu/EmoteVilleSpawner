@@ -1,0 +1,57 @@
+import static fr.il_totore.manadrop.MinecraftDependencyHelper.spigotApi
+import static fr.il_totore.manadrop.MinecraftRepositoryHelper.*
+
+plugins {
+	id 'java-library'
+    id "fr.il_totore.manadrop" version "0.4.1-SNAPSHOT"
+}
+
+group 'com.emoteville.emotevillespawner'
+version '1.0.0'
+sourceCompatibility = JavaVersion.VERSION_1_8
+
+
+repositories {
+    // Jcenter to resolve dependencies
+    jcenter()
+
+    spigotSnapshot() //https://hub.spigotmc.org/nexus/content/repositories/snapshots/
+    sonatype() //https://oss.sonatype.org/content/repositories/snapshots
+    // mavenCentral()
+    maven { url 'https://repo.dustplanet.de/artifactory/libs-release-local/' }
+    maven { url 'https://papermc.io/repo/repository/maven-public/' }
+}
+
+dependencies {
+    implementation spigotApi('1.16.5')
+    implementation("de.dustplanet:silkspawners:7.0.0") {
+        exclude group: "*", module: "*"
+    }
+    // runtimeOnly fileTree('libs') { include '*.jar' }
+
+}
+
+spigot {
+    desc {
+        named "${rootProject.name}" //Default: the project name
+        version project.version //Default: the project version
+        authors 'github.com/Kyu'
+        main 'com.emoteville.emotevillespawner.EmoteVilleSpawner'
+        apiVersion "1.16"
+        depend "SilkSpawners"
+		
+		command {
+            named 'spawner'
+            description 'TODO' // TODO finish
+        }
+    }
+}
+
+task copyJarToServer(type: Copy) {
+    from jar
+    into "C:\\Users\\rocke\\Projects\\Spigot-Servers\\1.16.5\\plugins"
+}
+
+
+processResources.finalizedBy(spigotPlugin)
+jar.finalizedBy(copyJarToServer)
