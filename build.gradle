@@ -1,5 +1,7 @@
-import static fr.il_totore.manadrop.MinecraftDependencyHelper.spigotApi
-import static fr.il_totore.manadrop.MinecraftRepositoryHelper.*
+import fr.il_totore.manadrop.MinecraftDependencyHelper
+
+import static fr.il_totore.manadrop.MinecraftRepositoryHelper.sonatype
+import static fr.il_totore.manadrop.MinecraftRepositoryHelper.spigotSnapshot
 
 plugins {
 	id 'java-library'
@@ -7,7 +9,10 @@ plugins {
 }
 
 group 'com.emoteville.emotevillespawner'
-version '1.0.0'
+version '1.0.5'
+def minecraft_version = '1.16.5'
+def api_version = '1.16'
+
 sourceCompatibility = JavaVersion.VERSION_1_8
 
 
@@ -23,12 +28,11 @@ repositories {
 }
 
 dependencies {
-    implementation spigotApi('1.16.5')
+    implementation MinecraftDependencyHelper.spigotApi("${minecraft_version}")
     implementation("de.dustplanet:silkspawners:7.0.0") {
         exclude group: "*", module: "*"
     }
-    // runtimeOnly fileTree('libs') { include '*.jar' }
-
+    implementation fileTree('libs') { include '*.jar' }
 }
 
 spigot {
@@ -37,12 +41,18 @@ spigot {
         version project.version //Default: the project version
         authors 'github.com/Kyu'
         main 'com.emoteville.emotevillespawner.EmoteVilleSpawner'
-        apiVersion "1.16"
+        apiVersion "${api_version}"
         depend "SilkSpawners"
 		
 		command {
             named 'spawner'
-            description 'TODO' // TODO finish
+            description 'Changes the spawner that the player last shift clicked, or spawner at the coordinates specified.'
+            usage '/<command> menuchange <type> <player> [coords] -- uses either the location of the last spawner player shift right clicked, or the optional [coords]'
+            permission {
+                named 'emotevillespawner.change'
+                description 'Change Spawner'
+                defaultType 'grant_op'
+            }
         }
     }
 }

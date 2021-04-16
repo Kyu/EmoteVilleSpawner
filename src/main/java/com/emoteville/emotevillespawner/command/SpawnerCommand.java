@@ -2,12 +2,17 @@ package com.emoteville.emotevillespawner.command;
 
 import com.emoteville.emotevillespawner.EmoteVilleSpawner;
 import com.emoteville.emotevillespawner.util.TabCompleteHelper;
+import net.minecraft.server.v1_16_R3.BlockPosition;
+import net.minecraft.server.v1_16_R3.TileEntity;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
+import org.bukkit.craftbukkit.v1_16_R3.CraftWorld;
+import org.bukkit.craftbukkit.v1_16_R3.block.CraftBlock;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 
@@ -32,10 +37,11 @@ public class SpawnerCommand implements CommandExecutor {
                 }
 
                 // Get spawner block, either from HashMap or from arguments
+                Location spawnerLoc;
                 Block spawner = null;
 
                 if (args.length >= 6) {
-                    String[] coords = Arrays.copyOfRange(args, 4, 7);
+                    String[] coords = Arrays.copyOfRange(args, 3, 6);
                     Integer[] numbers = new Integer[coords.length];
                     for (int i = 0; i < coords.length; i++) {
                         try {
@@ -43,17 +49,82 @@ public class SpawnerCommand implements CommandExecutor {
                         } catch (NumberFormatException nfe) {
                             return false;
                         }
-                    }  // TODO coord detection doesn't work
+                    }
 
                     spawner = p.getWorld().getBlockAt(numbers[0], numbers[1], numbers[2]);
                 } else if (EmoteVilleSpawner.playerInteractedSpawners.containsKey(p.getUniqueId())) {
                     spawner = p.getWorld().getBlockAt(EmoteVilleSpawner.playerInteractedSpawners.get(p.getUniqueId()));
                 }
 
-                // SilkSpawner API to change block type
-                if (spawner != null && spawner.getType() == Material.SPAWNER) {
-                    String spawnerType = args[1]; // String must be of namespace:entity_name e.g minecraft:pig
+                if (spawner == null || spawner.getType() != Material.SPAWNER) {
+                    return false;
+                }
+
+                // Get spawner location, and for NBT purposes, get CraftWorld, CraftBlock, then TileEntity of block
+                spawnerLoc = spawner.getLocation();
+
+                org.bukkit.craftbukkit.v1_16_R3.CraftWorld craftWorld = (CraftWorld) p.getWorld();
+                org.bukkit.craftbukkit.v1_16_R3.block.CraftBlock craftBlock = CraftBlock.at(craftWorld.getHandle(), new BlockPosition(spawnerLoc.getX(), spawnerLoc.getY(), spawnerLoc.getZ()));
+
+                TileEntity tileEntity = craftWorld.getHandle().getTileEntity(craftBlock.getPosition());
+
+                if (tileEntity != null) {
+                    String spawnerType = args[1]; // Entity name TODO what if invalid, its now a pig
+                    // Use SilkSpawner API to change spawner type
                     EmoteVilleSpawner.silkUtil.setSpawnerEntityID(spawner, spawnerType);
+
+                    // get NBT info, as well as container, and bukkit custom data
+                    net.minecraft.server.v1_16_R3.NBTTagCompound ntc = tileEntity.b();
+                    net.minecraft.server.v1_16_R3.NBTTagCompound persitentContainer = tileEntity.persistentDataContainer.toTagCompound();
+                    net.minecraft.server.v1_16_R3.NBTTagCompound bukkitValues = persitentContainer.getCompound("PublicBukkitValues");
+
+                    /*
+                    NBT Map For block
+                    {
+                        {-vanilla-nbt-here},
+                        { "SpawnerChanges": {
+                            "TotalChanges": -number-of-changes- (e.g 7),
+                            "entity-one": [0, 3],
+                            "entity-two": [1, 4, 6],
+                            "entity-three": [2, 5]
+                            }
+                        }
+                    }
+                    Parsing:
+                    changes -> number of changes
+                    Order of changes -> get all strings and place them in array of [entity1, entity2, entity3, entity1, entity2, entity3, entity2] then output
+                     */
+                    // TODO this should be a function of itself
+
+                    // Grab SpawnerChanges if it exists, or create a new one
+                    net.minecraft.server.v1_16_R3.NBTTagCompound changeData;
+                    if (!bukkitValues.hasKey("SpawnerChanges")) {
+                        changeData = new net.minecraft.server.v1_16_R3.NBTTagCompound();
+                        changeData.setInt("TotalChanges", 0);
+                    } else {
+                        changeData = bukkitValues.getCompound("SpawnerChanges");
+                    }
+
+                    // Grab changes if exists, or create new list of changes
+                    ArrayList<Integer> changeArray = new ArrayList<>();
+                    if (changeData.hasKey(spawnerType)) {
+                        Arrays.stream(changeData.getIntArray(spawnerType)).forEach(changeArray::add);
+                    }
+
+                    // Update values from array
+                    changeArray.add(changeData.getInt("TotalChanges"));
+                    changeData.setInt("TotalChanges", changeData.getInt("TotalChanges") + 1);
+
+                    changeData.setIntArray(spawnerType, changeArray.stream().mapToInt(i -> i).toArray());
+
+                    // Update NBT mappings
+                    bukkitValues.set("SpawnerChanges", changeData);
+                    persitentContainer.set("PublicBukkitValues", bukkitValues);
+                    tileEntity.persistentDataContainer.putAll(persitentContainer);
+
+                    // For some reason a simple ntc.set() isn't persistent so I gotta do all this
+                    tileEntity.save(ntc);
+
                     return true;
                 }
             }
@@ -83,7 +154,7 @@ public class SpawnerCommand implements CommandExecutor {
 
             if (args[0].equalsIgnoreCase("menuchange")) {
                 switch (args.length) {
-                    case 2: // Find entity list (some entities listed are invalid) TODO fix (?)
+                    case 2: // Find entity list (some entities listed are invalid) TODO filter out invalid (?)
                         indexInterest = 1;
                         EntityType[] entityTypes = EntityType.values();
                         for (EntityType e : entityTypes) {
