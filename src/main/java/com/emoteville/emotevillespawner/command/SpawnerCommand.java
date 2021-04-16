@@ -156,10 +156,7 @@ public class SpawnerCommand implements CommandExecutor {
                 switch (args.length) {
                     case 2: // Find entity list (some entities listed are invalid) TODO filter out invalid (?)
                         indexInterest = 1;
-                        EntityType[] entityTypes = EntityType.values();
-                        for (EntityType e : entityTypes) {
-                            argv.add(e.name().toLowerCase(Locale.ROOT));
-                        }
+                        argv = new ArrayList<>(EmoteVilleSpawner.silkUtil.getDisplayNameToMobID().values());
                         break;
                     case 3: // Find player list
                         indexInterest = 2;
