@@ -9,7 +9,7 @@ plugins {
 }
 
 group 'com.emoteville.emotevillespawner'
-version '1.0.6'
+version '1.1.0'
 def minecraft_version = '1.16.5'
 def api_version = '1.16'
 
@@ -51,6 +51,17 @@ spigot {
             permission {
                 named 'emotevillespawner.change'
                 description 'Change Spawner'
+                defaultType 'grant_op'
+            }
+        }
+
+        command {
+            named 'spawnerenchant'
+            description 'Enchants the tool in the hand of the main player'
+            usage '/<command> <player> [level] -- Item in main hand must be a pickaxe'
+            permission {
+                named 'emotevillespawner.enchant'
+                description 'Give Spawner enchant'
                 defaultType 'grant_op'
             }
         }
