@@ -1,8 +1,8 @@
 package com.emoteville.emotevillespawner.command;
 
 import com.emoteville.emotevillespawner.EmoteVilleSpawner;
+import com.emoteville.emotevillespawner.util.SpawnerUtil;
 import com.emoteville.emotevillespawner.util.TabCompleteHelper;
-import net.minecraft.server.v1_16_R3.BlockPosition;
 import net.minecraft.server.v1_16_R3.TileEntity;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -11,8 +11,6 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
-import org.bukkit.craftbukkit.v1_16_R3.CraftWorld;
-import org.bukkit.craftbukkit.v1_16_R3.block.CraftBlock;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
@@ -29,7 +27,7 @@ public class SpawnerCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (args[0].equalsIgnoreCase("menuchange")) {
+        if (args.length > 0 && args[0].equalsIgnoreCase("menuchange")) {
             if (args.length >= 3) {
                 // Get player info
                 String playerName = args[2];
@@ -64,11 +62,7 @@ public class SpawnerCommand implements CommandExecutor {
 
                 // Get spawner location, and for NBT purposes, get CraftWorld, CraftBlock, then TileEntity of block
                 spawnerLoc = spawner.getLocation();
-
-                org.bukkit.craftbukkit.v1_16_R3.CraftWorld craftWorld = (CraftWorld) p.getWorld();
-                org.bukkit.craftbukkit.v1_16_R3.block.CraftBlock craftBlock = CraftBlock.at(craftWorld.getHandle(), new BlockPosition(spawnerLoc.getX(), spawnerLoc.getY(), spawnerLoc.getZ()));
-
-                TileEntity tileEntity = craftWorld.getHandle().getTileEntity(craftBlock.getPosition());
+                TileEntity tileEntity = SpawnerUtil.getTileEntityOfBlock(p.getWorld(), spawnerLoc);
 
                 if (tileEntity != null) {
                     String spawnerType = args[1]; // Entity name TODO what if invalid, its now a pig
@@ -100,6 +94,7 @@ public class SpawnerCommand implements CommandExecutor {
 
                     // Grab SpawnerChanges if it exists, or create a new one
                     net.minecraft.server.v1_16_R3.NBTTagCompound changeData;
+
                     if (!bukkitValues.hasKey("SpawnerChanges")) {
                         changeData = new net.minecraft.server.v1_16_R3.NBTTagCompound();
                         changeData.setInt("TotalChanges", 0);
@@ -121,7 +116,7 @@ public class SpawnerCommand implements CommandExecutor {
 
                     // Update NBT mappings
                     bukkitValues.set("SpawnerChanges", changeData);
-                    persitentContainer.set("PublicBukkitValues", bukkitValues);
+                    persitentContainer.a(bukkitValues);
                     tileEntity.persistentDataContainer.putAll(persitentContainer);
 
                     // For some reason a simple ntc.set() isn't persistent so I gotta do all this
