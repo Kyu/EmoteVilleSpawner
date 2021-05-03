@@ -9,6 +9,7 @@ import net.minecraft.server.v1_16_R3.TileEntity;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.craftbukkit.v1_16_R3.inventory.CraftItemStack;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -17,7 +18,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class SpawnerInteractListener implements Listener {
@@ -50,16 +51,14 @@ public class SpawnerInteractListener implements Listener {
 
         if (ToolHelper.isPickaxe(event.getPlayer().getInventory().getItemInMainHand())) {
             ItemStack pickaxe = event.getPlayer().getInventory().getItemInMainHand();
-            if (pickaxe.hasItemMeta() && pickaxe.getItemMeta().hasLore()) {
-                List<String> lore = pickaxe.getItemMeta().getLore();
+            if (pickaxe.hasItemMeta() && pickaxe.getItemMeta().hasEnchants()) {
                 int lvlEnchant = 0;
-                for (String loreLine: lore) {
-                    if (loreLine.contains("Spawner")) {
-                        if (loreLine.split(" ")[1].equals("I")) {
-                            lvlEnchant = 1;
-                        } else if (loreLine.split(" ")[1].equals("II")) {
-                            lvlEnchant = 2;
-                        }
+
+                for (Map.Entry<Enchantment, Integer> entry : pickaxe.getItemMeta().getEnchants().entrySet()) {
+                    String enchName = entry.getKey().getKey().toString();
+                    // could just be entry.key.key.key (?)
+                    if (enchName.contains("Spawner")) {
+                        lvlEnchant = entry.getValue();
                     }
                 }
 
@@ -69,6 +68,7 @@ public class SpawnerInteractListener implements Listener {
                             event.setDrop(new ItemStack(Material.SPAWNER, 1));
                             break;
                         case 2:
+                        default:
                             ItemStack itemStack = event.getDrop();
                             if (itemStack == null || itemStack.getType() == Material.AIR) {
                                 itemStack = EmoteVilleSpawner.silkUtil.newSpawnerItem(event.getSpawner().getSpawnedType().name(), "", 1,
