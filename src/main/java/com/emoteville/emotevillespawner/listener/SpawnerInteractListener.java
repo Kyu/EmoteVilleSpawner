@@ -9,7 +9,6 @@ import net.minecraft.server.v1_16_R3.TileEntity;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.craftbukkit.v1_16_R3.inventory.CraftItemStack;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -18,7 +17,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.Map;
+import java.util.List;
 import java.util.Objects;
 
 public class SpawnerInteractListener implements Listener {
@@ -51,14 +50,17 @@ public class SpawnerInteractListener implements Listener {
 
         if (ToolHelper.isPickaxe(event.getPlayer().getInventory().getItemInMainHand())) {
             ItemStack pickaxe = event.getPlayer().getInventory().getItemInMainHand();
-            if (pickaxe.hasItemMeta() && pickaxe.getItemMeta().hasEnchants()) {
+            if (pickaxe.hasItemMeta() && pickaxe.getItemMeta().hasLore()) {
                 int lvlEnchant = 0;
 
-                for (Map.Entry<Enchantment, Integer> entry : pickaxe.getItemMeta().getEnchants().entrySet()) {
-                    String enchName = entry.getKey().getKey().toString();
-                    // could just be entry.key.key.key (?)
-                    if (enchName.contains("Spawner")) {
-                        lvlEnchant = entry.getValue();
+                List<String> lore = pickaxe.getItemMeta().getLore();
+                for (String loreLine: lore) {
+                    if (loreLine.contains("Spawner")) {
+                        if (loreLine.split(" ")[1].equals("II")) {
+                            lvlEnchant = 2;
+                        } else if (loreLine.split(" ")[1].equals("I")) {
+                            lvlEnchant = 1;
+                        }
                     }
                 }
 

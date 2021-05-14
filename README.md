@@ -18,7 +18,7 @@ Gradle will search for it.
 
 - `/data block get [tab] [tab] [tab]` while looking at block for nbt data  
 - `/data entity @s SelectedItem` for item held data  
-- `/spawner menuchange <type> <player> [coords] -- changes spawner type, uses either the location of the last spawner player shift right clicked, or the optional [coords]`
+- `/spawner menuchange <type> <player> [coords]` changes spawner type, uses either the location of the last spawner player shift right clicked, or the optional [coords]  
 
 
 ### Generating jar  
